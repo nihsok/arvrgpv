@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<head>
+  <title>AR</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/3.1.0/three.js/build/ar.js"></script>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <script>
+    const w=500,h=500
+    const worldWidth = 241, worldDepth = 253
+    const xlength = 5000, ylength = 5000
+    const scale = 3, height = 4000
+
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      canvas: canvas,
+    })
+    renderer.setClearColor(0x000000,0)
+    renderer.setSize(w,h)
+    // renderer.setPixelRatio(window.devicePixelRatio)
+    // renderer.setAnimationLoop(() => {
+    //   render()
+    // })
+    document.body.appendChild(renderer.domElement)
+
+    const scene = new THREE.Scene()
+    scene.visible = false
+    const camera = new THREE.PerspectiveCamera(45,w/h,0.1,200000)
+    camera.up.set(0,0,1)
+    camera.position.set(ylength,0,7000)
+    scene.add(camera)
+
+    const arToolkitSource = new THREEx.ArToolkitSource({
+      sourceType:'webcam'
+    })
+
+    arToolkitSource.init(() => {
+      setTimeout(() => {
+        onResize()
+      },2000)
+    })
+
+    addEventListener('resize', () => {
+      onResize()
+    })
+
+    const onResize = () => {
+      arToolkitSource.onResizeElement()
+      arToolkitSource.copyElementSizeTo(renderer.domElement)
+      if (arToolkitContext.arController !== null) {
+        arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas)
+      }
+    }
+
+    const arToolkitContext = new THREEx.ArToolkitContext({
+      cameraParametersUrl: THREEx.ArToolkitContext.baseURL+'../data/data/camera_para.dat',//???
+      detectionMode: "mono",
+//    patternRatio: 0.8,
+    })
+
+    arToolkitContext.init(() => {
+      camera.projectionMatrix.copy(arToolkitContext.getProjectionMatrix())
+    })
+
+    const arMarkerControls = new THREEx.ArMarkerControls(arToolkitContext,camera,{
+      type:"pattern",
+      patternUrl:THREEx.ArToolkitContext.baseURL+"../data/data/patt.hiro",
+      changeMatrixMode:"cameraTransformMatrix",
+  })
+
+
+    const axes = new THREE.AxesHelper(200)
+    scene.add(axes)
+
+    new THREE.FileLoader().load("https://raw.githubusercontent.com/smartnews-smri/japan-topography/main/data/municipality/topojson/s0001/prefectures.json",topology=>{
+      const data = JSON.parse(topology)
+      for(const path of data.arcs){
+        let lon = 0, lat = 0
+        const points=path.map(p=>{
+          const longitude = (lon += p[0]) * data.transform.scale[0] + data.transform.translate[0]
+          const latitude  = (lat += p[1]) * data.transform.scale[1] + data.transform.translate[1]
+          const x = -xlength/2 + (longitude - 120) * xlength / 30
+          const y = -ylength/2 + (latitude - 22.4) * ylength / 25.2
+          return new THREE.Vector3(-y,x,0)
+        })
+        const geometry2 = new THREE.BufferGeometry().setFromPoints(points)
+        const line = new THREE.Line(geometry2,new THREE.LineBasicMaterial({color:0x7f878f}))
+        scene.add(line)
+      }
+    })
+
+    for (const p of ['1000','975','925','900','850','800','700','600','500','400','300','250','200','150','100']){
+      new THREE.FileLoader().load('./gph_' + p + 'hPa.dat',data=>{
+        const geometry = new THREE.PlaneGeometry( xlength, ylength, worldWidth - 1, worldDepth - 1 );
+        const gph = data.split('\n')
+        const logp = Math.log(1000/p)
+        console.log(geometry)
+        for (let i=0; i < geometry.vertices.length; i++){
+          geometry.vertices[i].z = height*logp + (gph[i]-8000*logp)*scale 
+        }
+        const normal=Math.round(256*p/1000-1)
+        console.log(normal)
+        mesh = new THREE.Mesh(geometry,
+          new THREE.MeshBasicMaterial({
+            transparent:true,
+            opacity:0.3,
+            side:THREE.DoubleSide,
+            color:"rgb("+normal+","+normal+","+normal+")"}
+          ));
+        scene.add( mesh );
+      })
+    }
+
+    requestAnimationFrame(function animate(){
+      requestAnimationFrame(animate)
+      if (arToolkitSource.ready) {
+        arToolkitContext.update(arToolkitSource.domElement)
+        scene.visible = camera.visible
+      }
+      renderer.render(scene,camera)
+    })
+  </script>
+</body>

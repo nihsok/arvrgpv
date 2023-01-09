@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<head>
+  <title>original</title>
+</head>
+<body>
+  <div id="container"></div>
+  <!--<script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>-->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.148.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.148.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    let container, camera, controls, scene, renderer, light, mesh,axes;
+    const worldWidth = 241, worldDepth = 253
+    const xlength = 5000, ylength = 5000
+    const scale = 3, height = 4000
+
+    init();
+    animate();
+
+    function init() {
+      container = document.getElementById( 'container' );
+      container.innerHTML = '';
+
+      renderer = new THREE.WebGLRenderer( { antialias: true } );
+      renderer.setPixelRatio( window.devicePixelRatio );
+      renderer.setSize( window.innerWidth, window.innerHeight );
+      container.appendChild( renderer.domElement );
+
+      scene = new THREE.Scene();
+
+      camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 10, 200000 );
+      camera.up.set(0,0,1)
+			camera.position.set(ylength,0,7000);
+
+      controls = new OrbitControls( camera, renderer.domElement );
+      controls.minDistance = 1000;
+
+      light = new THREE.AmbientLight(0xffffff,1.0)
+      scene.add(light)
+      const light2 = new THREE.PointLight(0xFFFFFF, 2,1000,1.0);
+      scene.add(light2)
+
+      // axes = new THREE.AxesHelper(200)
+      // scene.add(axes)
+
+      new THREE.FileLoader().load("https://raw.githubusercontent.com/smartnews-smri/japan-topography/main/data/municipality/topojson/s0001/prefectures.json",topology=>{
+        const data = JSON.parse(topology)
+        for(const path of data.arcs){
+          let lon = 0, lat = 0
+          const points=path.map(p=>{
+            const longitude = (lon += p[0]) * data.transform.scale[0] + data.transform.translate[0]
+            const latitude  = (lat += p[1]) * data.transform.scale[1] + data.transform.translate[1]
+            const x = -xlength/2 + (longitude - 120) * xlength / 30
+            const y = -ylength/2 + (latitude - 22.4) * ylength / 25.2
+            return new THREE.Vector3(-y,x,0)
+          })
+          const geometry = new THREE.BufferGeometry().setFromPoints(points)
+          const line = new THREE.Line(geometry,new THREE.LineBasicMaterial({color:0x7f878f}))
+          scene.add(line)
+        }
+      })
+
+      for (const p of ['1000','975','925','900','850','800','700','600','500','400','300','250','200','150','100']){
+        new THREE.FileLoader().load('./gph_' + p + 'hPa.dat',data=>{
+          const geometry = new THREE.PlaneGeometry( xlength, ylength, worldWidth - 1, worldDepth - 1 );
+          const gph = data.split('\n')
+          const logp = Math.log(1000/p)
+          for (let i=0; i < geometry.attributes.position.count; i++){
+            geometry.attributes.position.setZ( i, height*logp + (gph[i]-8000*logp)*scale )
+          }
+          const normal=Math.round(256*p/1000-1)
+          console.log(normal)
+          mesh = new THREE.Mesh(geometry,
+            new THREE.MeshBasicMaterial({
+              transparent:true,
+              opacity:0.3,
+              side:THREE.DoubleSide,
+              color:"rgb("+normal+","+normal+","+normal+")"}
+            ));
+          scene.add( mesh );
+        })
+      }
+
+    }
+
+    function animate() {
+      controls.update()
+      renderer.render(scene,camera)
+      requestAnimationFrame( animate );
+    }
+
+    </script>
+</body>
