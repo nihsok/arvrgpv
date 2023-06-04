@@ -10,7 +10,7 @@
     const w=500,h=500
     const worldWidth = 241, worldDepth = 253
     const xlength = 1, ylength = 1
-    const scale = 2, height = 4000
+    const scale = 0.005, height = 4000
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -98,9 +98,9 @@
         const gph = data.split('\n')
         const logp = Math.log(1000/p)
         for (let i=0; i < geometry.vertices.length; i++){
-          geometry.vertices[i].x = i%worldWidth
-          geometry.vertices[i].y = i/worldWidth
-          geometry.vertices[i].z = height*logp + (gph[i]-8000*logp)*scale
+          // geometry.vertices[i].x = i%worldWidth
+          geometry.vertices[i].z = geometry.vertices[i].y//Math.round(i/worldWidth)
+          geometry.vertices[i].y = height*logp + (gph[i]-8000*logp)*scale
         }
         const normal=Math.round(256*p/1000-1)
         mesh = new THREE.Mesh(geometry,
