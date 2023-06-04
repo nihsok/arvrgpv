@@ -71,7 +71,7 @@
   })
 
 
-    const axes = new THREE.AxesHelper(200)//x:red, y:green, z:blue
+    const axes = new THREE.AxesHelper(20)//x:red, y:green, z:blue
     scene.add(axes)
 
     new THREE.FileLoader().load("https://raw.githubusercontent.com/smartnews-smri/japan-topography/main/data/municipality/topojson/s0001/prefectures.json",topology=>{
@@ -99,8 +99,8 @@
         const logp = Math.log(1000/p)
         for (let i=0; i < geometry.vertices.length; i++){
           geometry.vertices[i].x = i%worldWidth
-          geometry.vertices[i].y = height*logp + (gph[i]-8000*logp)*scale 
-          geometry.vertices[i].z = i/worldWidth
+          geometry.vertices[i].y = i/worldWidth
+          geometry.vertices[i].z = height*logp + (gph[i]-8000*logp)*scale
         }
         const normal=Math.round(256*p/1000-1)
         mesh = new THREE.Mesh(geometry,
