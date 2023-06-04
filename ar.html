@@ -9,8 +9,8 @@
   <script>
     const w=500,h=500
     const worldWidth = 241, worldDepth = 253
-    const xlength = 5000, ylength = 5000
-    const scale = 3, height = 4000
+    const xlength = 1, ylength = 1
+    const scale = 2, height = 4000
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -83,7 +83,7 @@
           const latitude  = (lat += p[1]) * data.transform.scale[1] + data.transform.translate[1]
           const x = -xlength/2 + (longitude - 120) * xlength / 30
           const y = -ylength/2 + (latitude - 22.4) * ylength / 25.2
-          return new THREE.Vector3(-y,x,0)
+          return new THREE.Vector3(x,0,-y)
         })
         const geometry2 = new THREE.BufferGeometry().setFromPoints(points)
         const line = new THREE.Line(geometry2,new THREE.LineBasicMaterial({color:0x7f878f}))
