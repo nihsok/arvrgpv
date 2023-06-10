@@ -91,8 +91,8 @@
       }
     })
 
-//    for (const p of ['1000','975','925','900','850','800','700','600','500','400','300','250','200','150','100']){
-    for (const p of ['1000','500']){
+    for (const p of ['1000','975','925','900','850','800','700','600','500','400','300','250','200','150','100']){
+//    for (const p of ['1000','500']){
       new THREE.FileLoader().load('./gph_' + p + 'hPa.dat',data=>{
         const geometry = new THREE.PlaneGeometry( xlength, ylength, worldWidth - 1, worldDepth - 1 );
         const gph = data.split('\n')
